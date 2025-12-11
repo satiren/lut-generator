@@ -8,7 +8,7 @@ import {
   IconDaVinciResolve, IconAfterEffects
 } from '@/components/icons'
 import { analyzeImageData, analysisToLUTParams, generateAnalysisDescription, type ImageAnalysis } from '@/lib/image-analysis'
-import { generateCubeLUT, defaultParams, presets, type LUTParams } from '@/lib/lut-generator'
+import { generateCubeLUT, defaultParams, presets, type LUTParams, type LUTOutputFormat } from '@/lib/lut-generator'
 
 type GenerationMode = 'ai' | 'image' | 'preset' | 'manual'
 
@@ -17,6 +17,7 @@ interface GenerationResult {
   params: LUTParams
   description: string
   filename: string
+  format: LUTOutputFormat
 }
 
 export default function Home() {
@@ -31,6 +32,7 @@ export default function Home() {
   const [showInstructions, setShowInstructions] = useState(false)
   const [manualParams, setManualParams] = useState<LUTParams>(defaultParams)
   const [copied, setCopied] = useState(false)
+  const [outputFormat, setOutputFormat] = useState<LUTOutputFormat>('standard')
   
   const fileInputRef = useRef<HTMLInputElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -96,27 +98,31 @@ export default function Home() {
         const analysisParams = analysisToLUTParams(imageAnalysis)
         params = { ...defaultParams, ...analysisParams }
         const analysisDesc = generateAnalysisDescription(imageAnalysis)
-        description = `Generated from image: ${analysisDesc}`
-        filename = `image-lut-${Date.now()}.cube`
-        lutContent = generateCubeLUT(params, `Image Reference LUT - ${analysisDesc}`)
+        const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+        description = `Generated from image${formatLabel}: ${analysisDesc}`
+        filename = `image-lut${outputFormat === 'hevc' ? '-hevc' : ''}-${Date.now()}.cube`
+        lutContent = generateCubeLUT(params, `Image Reference LUT${formatLabel} - ${analysisDesc}`, 33, outputFormat)
       } else if (mode === 'preset' && selectedPreset) {
         // Use preset
         params = presets[selectedPreset]
-        description = `Preset: ${presetOptions.find(p => p.value === selectedPreset)?.label}`
-        filename = `${selectedPreset}.cube`
-        lutContent = generateCubeLUT(params, presetOptions.find(p => p.value === selectedPreset)?.label || selectedPreset)
+        const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+        description = `Preset${formatLabel}: ${presetOptions.find(p => p.value === selectedPreset)?.label}`
+        filename = `${selectedPreset}${outputFormat === 'hevc' ? '-hevc' : ''}.cube`
+        const presetTitle = presetOptions.find(p => p.value === selectedPreset)?.label || selectedPreset
+        lutContent = generateCubeLUT(params, `${presetTitle}${formatLabel}`, 33, outputFormat)
       } else if (mode === 'manual') {
         // Use manual parameters
         params = manualParams
-        description = 'Custom manual parameters'
-        filename = `custom-lut-${Date.now()}.cube`
-        lutContent = generateCubeLUT(params, `Custom LUT`)
+        const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+        description = `Custom manual parameters${formatLabel}`
+        filename = `custom-lut${outputFormat === 'hevc' ? '-hevc' : ''}-${Date.now()}.cube`
+        lutContent = generateCubeLUT(params, `Custom LUT${formatLabel}`, 33, outputFormat)
       } else if (mode === 'ai' && prompt) {
         // Use AI generation
         const response = await fetch('/api/generate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, format: outputFormat }),
         })
         
         const data = await response.json()
@@ -127,13 +133,14 @@ export default function Home() {
         
         lutContent = data.lutContent
         params = data.params
-        description = data.description
-        filename = `ai-${prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-')}.cube`
+        const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+        description = data.description + formatLabel
+        filename = `ai-${prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-')}${outputFormat === 'hevc' ? '-hevc' : ''}.cube`
       } else {
         throw new Error('Please provide input for generation')
       }
 
-      setResult({ lutContent, params, description, filename })
+      setResult({ lutContent, params, description, filename, format: outputFormat })
     } catch (err) {
       console.error('Error generating LUT', err)
 
@@ -476,6 +483,40 @@ export default function Home() {
               </div>
             )}
 
+            {/* Output Format Selection */}
+            <div className="p-4 border border-border rounded-lg">
+              <label className="block text-sm font-medium mb-3">Output Format</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setOutputFormat('standard')}
+                  className={`p-3 text-left border rounded-lg transition-all ${
+                    outputFormat === 'standard'
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border hover:border-muted-foreground'
+                  }`}
+                >
+                  <span className="text-sm font-medium block">Standard</span>
+                  <span className="text-xs opacity-70">H.264, ProRes, etc.</span>
+                </button>
+                <button
+                  onClick={() => setOutputFormat('hevc')}
+                  className={`p-3 text-left border rounded-lg transition-all ${
+                    outputFormat === 'hevc'
+                      ? 'border-foreground bg-foreground text-background'
+                      : 'border-border hover:border-muted-foreground'
+                  }`}
+                >
+                  <span className="text-sm font-medium block">Apple HEVC</span>
+                  <span className="text-xs opacity-70">iPhone, iPad, Mac</span>
+                </button>
+              </div>
+              {outputFormat === 'hevc' && (
+                <p className="mt-2 text-xs text-muted">
+                  Optimized for Apple HEVC/H.265 footage. Compensates for limited range and gamma differences.
+                </p>
+              )}
+            </div>
+
             {/* Generate Button */}
             <button
               onClick={generateLUT}
@@ -536,7 +577,9 @@ Gain RGB: (${(result.params.gain.r * 100).toFixed(0)}, ${(result.params.gain.g *
                       <IconCube className="w-5 h-5 text-muted" />
                       <div>
                         <p className="text-sm font-medium">{result.filename}</p>
-                        <p className="text-xs text-muted-foreground">33x33x33 3D LUT</p>
+                        <p className="text-xs text-muted-foreground">
+                          33x33x33 3D LUT {result.format === 'hevc' && '• HEVC-Compatible'}
+                        </p>
                       </div>
                     </div>
                     <span className="text-xs text-muted-foreground">

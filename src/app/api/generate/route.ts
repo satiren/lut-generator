@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
-import { parseAIResponse, generateLUTFromDescription, defaultParams, presets, generateCubeLUT, type LUTParams } from '@/lib/lut-generator'
+import { parseAIResponse, generateLUTFromDescription, defaultParams, presets, generateCubeLUT, type LUTParams, type LUTOutputFormat } from '@/lib/lut-generator'
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -30,29 +30,33 @@ Be creative but precise. Always provide all parameters needed to achieve the des
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, preset, manualParams } = await request.json()
+    const { prompt, preset, manualParams, format = 'standard' } = await request.json()
+    const outputFormat: LUTOutputFormat = format === 'hevc' ? 'hevc' : 'standard'
 
     // If manual params provided, use them directly
     if (manualParams) {
       const params: LUTParams = { ...defaultParams, ...manualParams }
-      const lutContent = generateCubeLUT(params, `Manual LUT - ${new Date().toISOString().split('T')[0]}`)
+      const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+      const lutContent = generateCubeLUT(params, `Manual LUT${formatLabel} - ${new Date().toISOString().split('T')[0]}`, 33, outputFormat)
       return NextResponse.json({ 
         success: true, 
         lutContent,
         params,
-        description: 'Custom manual parameters'
+        description: `Custom manual parameters${formatLabel}`
       })
     }
 
     // If preset is specified, use preset parameters
     if (preset && presets[preset]) {
       const params = presets[preset]
-      const lutContent = generateCubeLUT(params, preset.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+      const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+      const presetTitle = preset.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      const lutContent = generateCubeLUT(params, `${presetTitle}${formatLabel}`, 33, outputFormat)
       return NextResponse.json({ 
         success: true, 
         lutContent,
         params,
-        description: `Preset: ${preset}`
+        description: `Preset${formatLabel}: ${preset}`
       })
     }
 
@@ -90,22 +94,24 @@ export async function POST(request: NextRequest) {
 
       if (matchedPreset) {
         const params = presets[matchedPreset]
-        const lutContent = generateCubeLUT(params, prompt.slice(0, 50))
+        const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+        const lutContent = generateCubeLUT(params, `${prompt.slice(0, 50)}${formatLabel}`, 33, outputFormat)
         return NextResponse.json({ 
           success: true, 
           lutContent,
           params,
-          description: `Matched to preset: ${matchedPreset} (AI unavailable - add GROQ_API_KEY for custom generation)`
+          description: `Matched to preset${formatLabel}: ${matchedPreset} (AI unavailable - add GROQ_API_KEY for custom generation)`
         })
       }
 
       // Default fallback
-      const lutContent = generateCubeLUT(defaultParams, prompt.slice(0, 50))
+      const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+      const lutContent = generateCubeLUT(defaultParams, `${prompt.slice(0, 50)}${formatLabel}`, 33, outputFormat)
       return NextResponse.json({ 
         success: true, 
         lutContent,
         params: defaultParams,
-        description: 'Default neutral LUT (AI unavailable - add GROQ_API_KEY for custom generation)'
+        description: `Default neutral LUT${formatLabel} (AI unavailable - add GROQ_API_KEY for custom generation)`
       })
     }
 
@@ -127,8 +133,9 @@ export async function POST(request: NextRequest) {
     const params: LUTParams = { ...defaultParams, ...aiParams }
     
     // Generate LUT content
-    const title = prompt.slice(0, 50).replace(/[^a-zA-Z0-9\s]/g, '')
-    const lutContent = generateLUTFromDescription(params, title)
+    const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
+    const title = prompt.slice(0, 50).replace(/[^a-zA-Z0-9\s]/g, '') + formatLabel
+    const lutContent = generateCubeLUT(params, title, 33, outputFormat)
 
     return NextResponse.json({ 
       success: true, 
