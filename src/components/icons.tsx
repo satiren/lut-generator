@@ -50,14 +50,6 @@ export function IconCheck({ className = 'w-6 h-6' }: { className?: string }) {
   )
 }
 
-export function IconX({ className = 'w-6 h-6' }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-    </svg>
-  )
-}
-
 export function IconSpinner({ className = 'w-6 h-6' }: { className?: string }) {
   return (
     <svg className={`${className} animate-spin`} viewBox="0 0 24 24" fill="none">
