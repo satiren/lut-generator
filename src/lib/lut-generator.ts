@@ -276,62 +276,6 @@ export function generateCubeLUT(
   return lines.join('\n')
 }
 
-// Parse AI response to extract LUT parameters
-export function parseAIResponse(response: string): Partial<LUTParams> {
-  const params: Partial<LUTParams> = {}
-  
-  // Extract numeric values using regex patterns
-  const patterns: { key: keyof LUTParams; pattern: RegExp }[] = [
-    { key: 'contrast', pattern: /contrast[:\s]*([+-]?[\d.]+)/i },
-    { key: 'saturation', pattern: /saturation[:\s]*([+-]?[\d.]+)/i },
-    { key: 'temperature', pattern: /temperature[:\s]*([+-]?[\d.]+)/i },
-    { key: 'tint', pattern: /tint[:\s]*([+-]?[\d.]+)/i },
-    { key: 'shadows', pattern: /shadows?[:\s]*([+-]?[\d.]+)/i },
-    { key: 'highlights', pattern: /highlights?[:\s]*([+-]?[\d.]+)/i },
-  ]
-  
-  for (const { key, pattern } of patterns) {
-    const match = response.match(pattern)
-    if (match) {
-      const value = parseFloat(match[1])
-      if (!isNaN(value)) {
-        (params as Record<string, number>)[key] = clamp(value / (Math.abs(value) > 1 ? 100 : 1)) * (value < 0 ? -1 : 1)
-      }
-    }
-  }
-  
-  // Parse lift/gamma/gain RGB values
-  const rgbPatterns = [
-    { key: 'lift', pattern: /lift[:\s]*(?:rgb)?[:\s]*\(?([+-]?[\d.]+)[,\s]+([+-]?[\d.]+)[,\s]+([+-]?[\d.]+)\)?/i },
-    { key: 'gamma', pattern: /gamma[:\s]*(?:rgb)?[:\s]*\(?([+-]?[\d.]+)[,\s]+([+-]?[\d.]+)[,\s]+([+-]?[\d.]+)\)?/i },
-    { key: 'gain', pattern: /gain[:\s]*(?:rgb)?[:\s]*\(?([+-]?[\d.]+)[,\s]+([+-]?[\d.]+)[,\s]+([+-]?[\d.]+)\)?/i },
-  ]
-  
-  for (const { key, pattern } of rgbPatterns) {
-    const match = response.match(pattern)
-    if (match) {
-      const r = parseFloat(match[1])
-      const g = parseFloat(match[2])
-      const b = parseFloat(match[3])
-      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-        (params as Record<string, { r: number; g: number; b: number }>)[key] = {
-          r: Math.max(-1, Math.min(1, r / (Math.abs(r) > 1 ? 100 : 1))),
-          g: Math.max(-1, Math.min(1, g / (Math.abs(g) > 1 ? 100 : 1))),
-          b: Math.max(-1, Math.min(1, b / (Math.abs(b) > 1 ? 100 : 1))),
-        }
-      }
-    }
-  }
-  
-  return params
-}
-
-// Generate LUT from description using parsed AI parameters
-export function generateLUTFromDescription(aiParams: Partial<LUTParams>, title: string): string {
-  const params: LUTParams = { ...defaultParams, ...aiParams }
-  return generateCubeLUT(params, title)
-}
-
 // Preset LUTs for common styles
 export const presets: Record<string, LUTParams> = {
   'cinematic-orange-teal': {

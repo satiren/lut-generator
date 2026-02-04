@@ -1,14 +1,14 @@
 # LUT Generator
 
-A modern web application for creating professional color grading LUTs (.cube files) using AI, reference images, or manual controls.
+Create professional .cube LUT files from reference images, presets, or manual controls. The app outputs industry-standard 3D LUTs compatible with Final Cut Pro, Premiere Pro, DaVinci Resolve, After Effects, and other editors.
 
 ## Features
 
-- **AI-Powered Generation**: Describe your desired look in natural language and let Groq AI generate the perfect LUT
-- **Image Reference**: Upload a reference image to extract color grading parameters automatically
-- **Presets**: Choose from professionally designed presets (Cinematic, Vintage, Black & White, etc.)
-- **Manual Controls**: Fine-tune every parameter including lift/gamma/gain color wheels
-- **Universal Compatibility**: Generates industry-standard .cube files that work with all major editing software
+- Image reference analysis to extract grading parameters
+- Preset library for common looks
+- Manual controls for contrast, saturation, temperature, tint, shadows, highlights, and RGB lift/gamma/gain
+- .cube output with standard 33x33x33 grid
+- Optional HEVC-optimized output for Apple devices
 
 ## Supported Software
 
@@ -18,109 +18,96 @@ A modern web application for creating professional color grading LUTs (.cube fil
 - After Effects
 - Avid Media Composer
 - LumaFusion
-- And any software that supports .cube LUT files
+- Any editor that supports .cube LUT files
 
 ## Tech Stack
 
-- **Framework**: Next.js 16.0.8 (with Turbopack)
-- **Styling**: Tailwind CSS v4.1
-- **AI**: Groq API (llama-3.3-70b-versatile)
-- **Language**: TypeScript
+- Next.js
+- Tailwind CSS
+- TypeScript
 
 ## Getting Started
 
-### Prerequisites
+1. Install dependencies:
+   `npm install`
+2. Run the development server:
+   `npm run dev`
+3. Open `http://localhost:3000`
 
-- Node.js 20 or higher
-- npm, yarn, pnpm, or bun
+## Build For Production
 
-### Installation
+1. Build:
+   `npm run build`
+2. Start:
+   `npm start`
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd lut-generator
-```
+## How To Use The App
 
-2. Install dependencies:
-```bash
-npm install
-```
+1. Choose a generation mode: Reference, Presets, or Manual.
+2. Provide your input (image, preset, or manual values).
+3. Click `Generate LUT`.
+4. Download the `.cube` file or copy it to clipboard.
 
-3. Set up environment variables:
-```bash
-cp .env.example .env
-```
-
-4. Add your Groq API key to `.env`:
-```
-GROQ_API_KEY=your_groq_api_key_here
-```
-
-Get a free API key at [console.groq.com](https://console.groq.com)
-
-5. Run the development server:
-```bash
-npm run dev
-```
-
-6. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Building for Production
-
-```bash
-npm run build
-npm start
-```
-
-## How to Use LUTs
+## How To Use .cube LUTs
 
 ### Final Cut Pro
+
 1. Open Effects Browser
 2. Search for "Custom LUT"
 3. Drag effect to your clip
 4. In Inspector, click LUT dropdown
 5. Choose "Choose Custom LUT"
-6. Select your .cube file
+6. Select your `.cube` file
 
 ### Premiere Pro
+
 1. Select your clip
 2. Open Lumetri Color panel
 3. Go to Creative tab
 4. Click "Look" dropdown
 5. Select "Browse"
-6. Choose your .cube file
+6. Choose your `.cube` file
 7. Adjust Intensity as needed
 
 ### DaVinci Resolve
+
 1. Go to Project Settings
 2. Select Color Management
 3. Click "Open LUT Folder"
-4. Copy .cube file there
+4. Copy `.cube` file there
 5. Click "Update Lists"
 6. In Color tab, right-click node
 7. Choose LUTs → 3D LUT
 
 ### After Effects
+
 1. Select your layer
 2. Effect → Color Correction
 3. Apply "Lumetri Color"
 4. In Creative section
 5. Click "Look" dropdown
-6. Browse to .cube file
+6. Browse to `.cube` file
 
 ## .cube File Format
 
-The generated LUTs use the Adobe Cube LUT Specification 1.0:
+The generated LUTs follow the Adobe Cube LUT specification:
+
 - 33x33x33 3D lookup table (35,937 color points)
 - RGB values from 0.0 to 1.0
 - Red-major ordering (R varies fastest)
-- Compatible with all professional editing software
+
+## Contributing
+
+Keep changes small and focused. Please run `npm run build` before opening a PR.
+
+## Code Of Conduct
+
+Be respectful, constructive, and professional. Harassment and discrimination are not tolerated.
+
+## Security
+
+If you discover a security issue, open a GitHub issue and clearly mark it as security-sensitive so it can be triaged quickly.
 
 ## License
 
-MIT
-
-## Credits
-
-Built with Next.js, Tailwind CSS, and Groq AI
+MIT. See `LICENSE`.

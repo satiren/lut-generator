@@ -2,15 +2,14 @@
 
 import { useState, useRef, useCallback } from 'react'
 import { 
-  IconUpload, IconDownload, IconWand, IconImage, IconSliders, 
+  IconUpload, IconDownload, IconImage, IconSliders, 
   IconSpinner, IconCheck, IconInfo, IconChevronDown, IconPalette,
-  IconCube, IconFilm, IconCopy, IconFinalCutPro, IconPremierePro,
-  IconDaVinciResolve, IconAfterEffects
+  IconCube, IconFilm, IconCopy, IconPlay
 } from '@/components/icons'
 import { analyzeImageData, analysisToLUTParams, generateAnalysisDescription, type ImageAnalysis } from '@/lib/image-analysis'
 import { generateCubeLUT, defaultParams, presets, type LUTParams, type LUTOutputFormat } from '@/lib/lut-generator'
 
-type GenerationMode = 'ai' | 'image' | 'preset' | 'manual'
+type GenerationMode = 'image' | 'preset' | 'manual'
 
 interface GenerationResult {
   lutContent: string
@@ -21,8 +20,7 @@ interface GenerationResult {
 }
 
 export default function Home() {
-  const [mode, setMode] = useState<GenerationMode>('ai')
-  const [prompt, setPrompt] = useState('')
+  const [mode, setMode] = useState<GenerationMode>('preset')
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [isGenerating, setIsGenerating] = useState(false)
   const [result, setResult] = useState<GenerationResult | null>(null)
@@ -117,25 +115,6 @@ export default function Home() {
         description = `Custom manual parameters${formatLabel}`
         filename = `custom-lut${outputFormat === 'hevc' ? '-hevc' : ''}-${Date.now()}.cube`
         lutContent = generateCubeLUT(params, `Custom LUT${formatLabel}`, 33, outputFormat)
-      } else if (mode === 'ai' && prompt) {
-        // Use AI generation
-        const response = await fetch('/api/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, format: outputFormat }),
-        })
-        
-        const data = await response.json()
-        
-        if (!data.success) {
-          throw new Error(data.error || 'Failed to generate LUT')
-        }
-        
-        lutContent = data.lutContent
-        params = data.params
-        const formatLabel = outputFormat === 'hevc' ? ' (HEVC)' : ''
-        description = data.description + formatLabel
-        filename = `ai-${prompt.slice(0, 30).replace(/[^a-zA-Z0-9]/g, '-')}${outputFormat === 'hevc' ? '-hevc' : ''}.cube`
       } else {
         throw new Error('Please provide input for generation')
       }
@@ -220,7 +199,11 @@ export default function Home() {
               {/* Final Cut Pro */}
               <div className="p-4 border border-border rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <IconFinalCutPro className="w-8 h-8" />
+                  <img
+                    src="/logos/final-cut-pro.png"
+                    alt="Final Cut Pro logo"
+                    className="w-8 h-8 object-contain"
+                  />
                   <h3 className="font-medium">Final Cut Pro</h3>
                 </div>
                 <ol className="text-sm text-muted space-y-1.5 list-decimal list-inside">
@@ -236,7 +219,11 @@ export default function Home() {
               {/* Premiere Pro */}
               <div className="p-4 border border-border rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <IconPremierePro className="w-8 h-8" />
+                  <img
+                    src="/logos/premiere-pro.png"
+                    alt="Premiere Pro logo"
+                    className="w-8 h-8 object-contain"
+                  />
                   <h3 className="font-medium">Premiere Pro</h3>
                 </div>
                 <ol className="text-sm text-muted space-y-1.5 list-decimal list-inside">
@@ -253,7 +240,11 @@ export default function Home() {
               {/* DaVinci Resolve */}
               <div className="p-4 border border-border rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <IconDaVinciResolve className="w-8 h-8" />
+                  <img
+                    src="/logos/davinci-resolve.png"
+                    alt="DaVinci Resolve logo"
+                    className="w-8 h-8 object-contain"
+                  />
                   <h3 className="font-medium">DaVinci Resolve</h3>
                 </div>
                 <ol className="text-sm text-muted space-y-1.5 list-decimal list-inside">
@@ -270,7 +261,11 @@ export default function Home() {
               {/* After Effects */}
               <div className="p-4 border border-border rounded-lg">
                 <div className="flex items-center gap-3 mb-3">
-                  <IconAfterEffects className="w-8 h-8" />
+                  <img
+                    src="/logos/after-effects.png"
+                    alt="After Effects logo"
+                    className="w-8 h-8 object-contain"
+                  />
                   <h3 className="font-medium">After Effects</h3>
                 </div>
                 <ol className="text-sm text-muted space-y-1.5 list-decimal list-inside">
@@ -310,9 +305,8 @@ export default function Home() {
             {/* Mode Selection */}
             <div>
               <label className="block text-sm font-medium mb-3">Generation Mode</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
-                  { id: 'ai', icon: IconWand, label: 'AI Prompt' },
                   { id: 'image', icon: IconImage, label: 'Reference' },
                   { id: 'preset', icon: IconPalette, label: 'Presets' },
                   { id: 'manual', icon: IconSliders, label: 'Manual' },
@@ -332,24 +326,6 @@ export default function Home() {
                 ))}
               </div>
             </div>
-
-            {/* AI Prompt Input */}
-            {mode === 'ai' && (
-              <div className="animate-fade-in">
-                <label className="block text-sm font-medium mb-2">
-                  Describe your desired look
-                </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g., Cinematic orange and teal with crushed blacks and warm highlights"
-                  className="w-full h-32 px-4 py-3 bg-card border border-border rounded-lg resize-none focus:outline-none focus:border-foreground transition-colors placeholder:text-muted-foreground"
-                />
-                <p className="mt-2 text-xs text-muted">
-                  Powered by Groq AI. Be descriptive about colors, contrast, mood, and film references.
-                </p>
-              </div>
-            )}
 
             {/* Image Upload */}
             {mode === 'image' && (
@@ -520,7 +496,7 @@ export default function Home() {
             {/* Generate Button */}
             <button
               onClick={generateLUT}
-              disabled={isGenerating || (mode === 'ai' && !prompt) || (mode === 'image' && !imageAnalysis) || (mode === 'preset' && !selectedPreset)}
+              disabled={isGenerating || (mode === 'image' && !imageAnalysis) || (mode === 'preset' && !selectedPreset)}
               className="w-full py-4 bg-foreground text-background font-medium rounded-lg flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isGenerating ? (
@@ -530,7 +506,7 @@ export default function Home() {
                 </>
               ) : (
                 <>
-                  <IconWand className="w-5 h-5" />
+                  <IconPlay className="w-5 h-5" />
                   <span>Generate LUT</span>
                 </>
               )}

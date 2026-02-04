@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'LUT Generator | Create Professional Color Grading LUTs',
-  description: 'Generate custom .cube LUT files using AI or reference images. Compatible with Final Cut Pro, Premiere Pro, DaVinci Resolve, and more.',
+  description: 'Generate custom .cube LUT files from reference images, presets, or manual controls. Compatible with Final Cut Pro, Premiere Pro, DaVinci Resolve, and more.',
   keywords: ['LUT', 'color grading', 'cube file', 'Final Cut Pro', 'Premiere Pro', 'DaVinci Resolve'],
 }
 
